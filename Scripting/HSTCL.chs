@@ -13,7 +13,9 @@ import Foreign.Storable
 #include <tcl8.5/tcl.h>
 
 
+-- 
 newtype Interpreter = Interpreter {fromInterpreter :: Ptr ()}
+newtype Object      = Object {fromObject :: Ptr ()}
 
 ------------------------------------------------------------------------------
 -- Haskell code
@@ -48,6 +50,11 @@ resultToEnum = toEnum . fromIntegral
 {# fun unsafe Tcl_Eval as evaluate 
    { fromInterpreter `Interpreter' ,
      withCString* `String' } -> `Result' resultToEnum #} 
+{#fun unsafe Tcl_EvalFile as evaluateFile 
+   { fromInterpreter `Interpreter' , 
+     withCString* `String' } -> `Result' resultToEnum #} 
 
 {# fun unsafe Tcl_GetStringResult as getStringResult
    { fromInterpreter `Interpreter' } -> `String' peekCString* #} 
+
+------------------------------------------------------------------------------
