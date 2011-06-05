@@ -40,25 +40,25 @@ resultToEnum = toEnum . fromIntegral
 
 ------------------------------------------------------------------------------
 -- Bindings
-{# fun unsafe Tcl_CreateInterp as createInterpreter 
+{# fun  Tcl_CreateInterp as createInterpreter 
    { } ->   `Interpreter' Interpreter #}
 
 
-{# fun unsafe Tcl_DeleteInterp as deleteInterpreter
+{# fun  Tcl_DeleteInterp as deleteInterpreter
    { fromInterpreter  `Interpreter' } -> `()' #} 
 
-{# fun unsafe Tcl_Eval as evaluate 
+{# fun  Tcl_Eval as evaluate 
    { fromInterpreter `Interpreter' ,
      withCString* `String' } -> `Result' resultToEnum #} 
-{#fun unsafe Tcl_EvalFile as evaluateFile 
+{#fun Tcl_EvalFile as evaluateFile 
    { fromInterpreter `Interpreter' , 
      withCString* `String' } -> `Result' resultToEnum #} 
 
-{# fun unsafe Tcl_GetStringResult as getStringResult
+{# fun  Tcl_GetStringResult as getStringResult
    { fromInterpreter `Interpreter' } -> `String' peekCString* #} 
 
 
-{# fun Tcl_CreateObjCommand as createObjectCommand
+{# fun  Tcl_CreateObjCommand as createObjectCommand
    { fromInterpreter `Interpreter' ,
      withCString* `String' ,
      id  `HandlerFuncPtr', 
@@ -67,7 +67,7 @@ resultToEnum = toEnum . fromIntegral
 
 type DeleteFuncPtr = FunPtr (Ptr () -> IO ())
 
-{# fun unsafe Tcl_ResetResult as resetResult
+{# fun  Tcl_ResetResult as resetResult
    { fromInterpreter `Interpreter' } -> `()' #}
 
 ------------------------------------------------------------------------------
@@ -84,6 +84,6 @@ type HandlerFunc = Ptr () -> Ptr () -> CInt -> Ptr (Ptr ()) -> IO (CInt)
 type HandlerFuncPtr = FunPtr HandlerFunc
 
 
-foreign import ccall "wrapper"
+foreign import ccall safe "wrapper"
    mkHandler :: HandlerFunc -> IO (FunPtr HandlerFunc)
                 

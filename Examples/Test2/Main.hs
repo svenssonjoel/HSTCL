@@ -5,27 +5,28 @@ import Scripting.HSTCL as TCL
 import System.IO
 
 import Foreign.Ptr
-import Control.Exception
+--import Control.Exception
+import Control.Monad
+
 
 apaHandler :: HandlerFunc 
 apaHandler _ interp _ _ = do
-  putStrLn "APA is good!!"
+  putStrLn "APA"
   resetResult (Interpreter interp) -- Fix !
   return 0
 
 main = do 
   TCL.withInterpreter $ \i -> do 
-    bracket (mkHandler apaHandler) 
-      (\ f -> do 
-          putStrLn (show (castFunPtrToPtr f))
-          p <- createObjectCommand i 
-                                   "apa" 
-                                   f
-                                   nullPtr
-                                   (castPtrToFunPtr nullPtr)
-          putStrLn (show (fromCommand p))
-          interpreterLoop i)
-      (freeHaskellFunPtr)
+    f <- mkHandler apaHandler
+    putStrLn (show (castFunPtrToPtr f))
+    p <- createObjectCommand i 
+                             "apa" 
+                             f
+                             nullPtr
+                             (castPtrToFunPtr nullPtr)
+    putStrLn (show (fromCommand p))
+    interpreterLoop i
+    freeHaskellFunPtr f
     
  
   where 
@@ -33,9 +34,14 @@ main = do
       putStr "> " 
       hFlush stdout
       str <- getLine
-      res <- TCL.evaluate i str
-      case res of 
-        Ok -> putStrLn "Ok"
-        Error -> putStrLn "Error"
-        Continue -> putStrLn "Continue"
-      interpreterLoop i 
+      if  (str == "exit") 
+        then 
+           (do putStrLn "Quiting!" 
+               return ())
+        else  
+           (do res <- TCL.evaluate i str
+               case res of 
+                 Ok -> putStrLn "Ok"
+                 Error -> putStrLn "Error"
+                 Continue -> putStrLn "Continue"
+               interpreterLoop i) 

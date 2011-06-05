@@ -1,5 +1,6 @@
 
 Examples= \
+   Examples/Test2/Main.hs \
    Examples/TclShell/Main.hs \
 
 SRC = Scripting/HSTCL.hs
