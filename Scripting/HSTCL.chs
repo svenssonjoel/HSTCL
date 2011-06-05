@@ -13,9 +13,9 @@ import Foreign.Storable
 #include <tcl8.5/tcl.h>
 
 
--- 
 newtype Interpreter = Interpreter {fromInterpreter :: Ptr ()}
 newtype Object      = Object {fromObject :: Ptr ()}
+newtype Command     = Command {fromCommand :: Ptr ()}
 
 ------------------------------------------------------------------------------
 -- Haskell code
@@ -57,4 +57,33 @@ resultToEnum = toEnum . fromIntegral
 {# fun unsafe Tcl_GetStringResult as getStringResult
    { fromInterpreter `Interpreter' } -> `String' peekCString* #} 
 
+
+{# fun Tcl_CreateObjCommand as createObjectCommand
+   { fromInterpreter `Interpreter' ,
+     withCString* `String' ,
+     id  `HandlerFuncPtr', 
+     id `Ptr ()', -- ClientData 
+     id `DeleteFuncPtr'} -> `Command' Command #}
+
+type DeleteFuncPtr = FunPtr (Ptr () -> IO ())
+
+{# fun unsafe Tcl_ResetResult as resetResult
+   { fromInterpreter `Interpreter' } -> `()' #}
+
 ------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+-- Attempt to create a callback wrapper. No support for this in C2HS ?
+
+
+--static int HandleFireWeaponCmd(ClientData client_data,
+--Tcl_Interp * interp,
+--int objc, Tcl_Obj * CONST objv[])
+
+type HandlerFunc = Ptr () -> Ptr () -> CInt -> Ptr (Ptr ()) -> IO (CInt)
+type HandlerFuncPtr = FunPtr HandlerFunc
+
+
+foreign import ccall "wrapper"
+   mkHandler :: HandlerFunc -> IO (FunPtr HandlerFunc)
+                
