@@ -12,6 +12,10 @@ import Foreign.Storable
 import Control.Exception
 
 import Data.Typeable
+import Data.Bits 
+
+
+-- TODO: dont want to hardcode 8.5 in there
 #include <tcl8.5/tcl.h>
 
 
@@ -77,7 +81,6 @@ enum LINK_TYPE {
   };
   
 enum LINK_FLAG  {
-  NO_FLAG     = 0,
   GLOBAL_ONLY = TCL_GLOBAL_ONLY,
   NAMESPACE_ONLY = TCL_NAMESPACE_ONLY,
   LEAVE_ERR_MSG = TCL_LEAVE_ERR_MSG,
@@ -103,8 +106,10 @@ resultToEnum = toEnum . fromIntegral
 
 
 linkTypeIn = fromIntegral . fromEnum
-linkFlagIn = fromIntegral . fromEnum
+-- linkFlagIn = fromIntegral . fromEnum
 
+flagListToInt :: (Enum a, Bits b, Num b )=> [a] -> b
+flagListToInt = foldl (.|.) 0 . map (fromIntegral . fromEnum)
 
 ------------------------------------------------------------------------------
 -- Bindings
@@ -170,19 +175,27 @@ foreign import ccall safe "wrapper"
 -- TODO: Users of this one may set the second "String" to Null. not possible now. 
 {# fun Tcl_SetVar2Ex as setVar2Ex' 
    { fromInterpreter `Interpreter' , 
-     withCString* `String' ,
-     withCString* `String' , 
-     fromObject   `Object' ,
-     linkFlagIn   `LinkFlag' } -> `Command' mkCommand* #}
+     withCString*   `String' ,
+     withCString*   `String' , 
+     fromObject     `Object' ,
+     flagListToInt  `[LinkFlag]' } -> `Command' mkCommand* #}
      
 
+{# fun Tcl_SetVar2Ex as setVarFromObject' 
+   { fromInterpreter `Interpreter' ,
+     withCString*  `String' ,
+     withNullPtr-  `String' , 
+     fromObject    `Object' , 
+     flagListToInt `[LinkFlag]' } -> `Command' mkCommand* #}
+
+withNullPtr f = f nullPtr
 
 
 {# fun Tcl_SetVar as setVar' 
    { fromInterpreter `Interpreter' ,
      withCString*    `String' , 
      withCString*    `String' ,
-     linkFlagIn      `LinkFlag' } -> `String' mkStringResult* #}
+     flagListToInt   `[LinkFlag]' } -> `String' mkStringResult* #}
      
 
 

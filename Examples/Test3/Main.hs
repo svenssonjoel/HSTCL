@@ -24,7 +24,8 @@ main = do
                              nullPtr
                              (castPtrToFunPtr nullPtr)
     putStrLn (show (fromCommand p))
-    setVar' i "mjau" "123" NoFlag
+    o <- newStringObject "123"
+    setVarFromObject' i "mjau" o [] 
     interpreterLoop i
     freeHaskellFunPtr f
     
