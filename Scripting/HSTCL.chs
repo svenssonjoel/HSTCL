@@ -49,6 +49,11 @@ mkObject      = mkX Object      "mkObject"
 mkCommand     = mkX Command     "mkCommand" 
 
 
+mkStringResult ptr = do 
+  throwIfNull ptr "mkStringResult"
+  peekCString ptr
+
+
 ------------------------------------------------------------------------------
 -- Haskell code
 
@@ -70,10 +75,21 @@ enum LINK_TYPE {
   LINK_BOOLEAN = TCL_LINK_BOOLEAN,                
   LINK_STRING = TCL_LINK_STRING
   };
+  
+enum LINK_FLAG  {
+  NO_FLAG     = 0,
+  GLOBAL_ONLY = TCL_GLOBAL_ONLY,
+  NAMESPACE_ONLY = TCL_NAMESPACE_ONLY,
+  LEAVE_ERR_MSG = TCL_LEAVE_ERR_MSG,
+  APPEND_VALUE = TCL_APPEND_VALUE,
+  LIST_ELEMENT = TCL_LIST_ELEMENT
+  };
+  
 #endc
 
 resultToEnum = toEnum . fromIntegral
-enumToC   = fromIntegral . fromEnum
+
+
 
 {# enum RESULT_ENUM as Result 
    {underscoreToCase} deriving (Show, Eq) #}
@@ -81,6 +97,14 @@ enumToC   = fromIntegral . fromEnum
 
 {# enum LINK_TYPE as LinkType
    {underscoreToCase} deriving (Show, Eq) #}
+
+{# enum LINK_FLAG as LinkFlag
+   {underscoreToCase} deriving (Show, Eq) #}
+
+
+linkTypeIn = fromIntegral . fromEnum
+linkFlagIn = fromIntegral . fromEnum
+
 
 ------------------------------------------------------------------------------
 -- Bindings
@@ -139,6 +163,47 @@ foreign import ccall safe "wrapper"
    { fromInterpreter `Interpreter' , 
      withCString* `String' , 
      id `Ptr CChar' ,
-     enumToC `LinkType' } -> `Result' resultToEnum #}
+     linkTypeIn `LinkType' } -> `Result' resultToEnum #}
   
+
+-- TODO: The flag could be a combination of "flags" make this work. somehow
+-- TODO: Users of this one may set the second "String" to Null. not possible now. 
+{# fun Tcl_SetVar2Ex as setVar2Ex' 
+   { fromInterpreter `Interpreter' , 
+     withCString* `String' ,
+     withCString* `String' , 
+     fromObject   `Object' ,
+     linkFlagIn   `LinkFlag' } -> `Command' mkCommand* #}
      
+
+
+
+{# fun Tcl_SetVar as setVar' 
+   { fromInterpreter `Interpreter' ,
+     withCString*    `String' , 
+     withCString*    `String' ,
+     linkFlagIn      `LinkFlag' } -> `String' mkStringResult* #}
+     
+
+
+
+------------------------------------------------------------------------------
+-- Create Object 
+
+{# fun Tcl_NewObj as newObject
+   { } -> `Object' mkObject* #} 
+
+{# fun Tcl_DuplicateObj as duplicateObject
+   { fromObject `Object' } -> `Object' mkObject* #} 
+
+
+-- TODO: IS A MACRO. needs a wrapper
+--{# fun Tcl_IncrRefCount as incrRefCount 
+--   { fromObject `Object' } -> `()' id #} 
+
+
+newStringObject str = newStringObject' str (length str)
+
+{# fun Tcl_NewStringObj as newStringObject'
+   { withCString* `String' , 
+     fromIntegral `Int'    } -> `Object' mkObject* #}
