@@ -16,7 +16,7 @@ import Data.Bits
 
 
 -- TODO: dont want to hardcode 8.5 in there
-#include <tcl8.5/tcl.h>
+#include <tcl.h>
 
 
 
