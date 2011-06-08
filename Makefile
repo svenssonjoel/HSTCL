@@ -16,9 +16,10 @@ lib: Scripting/HSTCL.o
 Scripting/HSTCL.o: Scripting/HSTCL.hs
 	ghc --make $< 
 
-# Preprocessing step:
+# TODO: Different linuxes put tcl.h in different places
+#       Make dist agnostic
 Scripting/HSTCL.hs: Scripting/HSTCL.chs 
-	c2hs Scripting/HSTCL.chs 
+	c2hs -C -I/usr/include/tcl8.5  Scripting/HSTCL.chs
 
 
 Examples: $(ExampleEXES)
