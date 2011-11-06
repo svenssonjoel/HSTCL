@@ -12,7 +12,7 @@ import Control.Monad
 apaHandler :: HandlerFunc 
 apaHandler _ interp _ _ = do
   putStrLn "APA"
-  resetResult (Interpreter interp) -- Fix !
+  resetResult interp 
   return 0
 
 main = do 

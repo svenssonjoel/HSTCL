@@ -148,12 +148,25 @@ type DeleteFuncPtr = FunPtr (Ptr () -> IO ())
 ------------------------------------------------------------------------------
 -- Attempt to create a callback wrapper. No support for this in C2HS ?
 
-type HandlerFunc = Ptr () -> Ptr () -> CInt -> Ptr (Ptr ()) -> IO (CInt)
-type HandlerFuncPtr = FunPtr HandlerFunc
 
+
+
+
+type HandlerFunc = Ptr () -> Interpreter -> CInt -> Ptr( Ptr ()) -> IO (CInt) 
+type HandlerFuncC = Ptr () -> Ptr () -> CInt -> Ptr (Ptr ()) -> IO (CInt)
+
+type HandlerFuncPtr = FunPtr HandlerFuncC
+
+-- TODO: Do for all other parts of the input what is done in the 
+-- Interpreter case. (give proper Haskell types)
+mkHandler :: HandlerFunc -> IO (FunPtr HandlerFuncC)
+mkHandler f = mkHandler' f'  
+  where 
+    f' ptr interp cint ptrptr = 
+      f ptr (Interpreter interp) cint ptrptr 
 
 foreign import ccall safe "wrapper"
-   mkHandler :: HandlerFunc -> IO (FunPtr HandlerFunc)
+   mkHandler' :: HandlerFuncC -> IO (FunPtr HandlerFuncC)
                 
 
 
