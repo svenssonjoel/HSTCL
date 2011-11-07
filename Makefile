@@ -2,6 +2,7 @@
 Examples= \
    Examples/Test2/Main.hs \
    Examples/Test3/Main.hs \
+   Examples/Test4/Main.hs \
    Examples/TclShell/Main.hs \
 
 SRC = Scripting/HSTCL.hs

@@ -8,8 +8,10 @@ import Foreign.C.Types
 import Foreign.C.String
 import Foreign.Ptr
 import Foreign.Storable
+import Foreign.Marshal.Alloc
 
 import Control.Exception
+import Control.Applicative
 
 import Data.Typeable
 import Data.Bits 
@@ -44,6 +46,14 @@ newtype Interpreter = Interpreter {fromInterpreter :: Ptr ()}
 newtype Object      = Object {fromObject :: Ptr ()}
 newtype Command     = Command {fromCommand :: Ptr ()}
 
+
+-- TODO: This needs to be improved.
+--       Maybe there are Alignment reqs on Objects, etc. 
+instance Storable Object where 
+  sizeOf o = sizeOf (fromObject o)
+  alignment o = alignment (fromObject o)
+  peek a = Object <$> peek (castPtr a :: Ptr (Ptr ())) -- is this correct? enough ? 
+ 
 
 mkX x msg ptr = do throwIfNull ptr msg
                    return$ x ptr
@@ -148,7 +158,7 @@ type DeleteFuncPtr = FunPtr (Ptr () -> IO ())
 ------------------------------------------------------------------------------
 -- Attempt to create a callback wrapper. No support for this in C2HS ?
 
-type HandlerFunc = Ptr () -> Interpreter -> CInt -> Ptr( Ptr ()) -> IO (CInt) 
+type HandlerFunc = Ptr () -> Interpreter -> CInt -> Ptr Object -> IO (CInt) 
 type HandlerFuncC = Ptr () -> Ptr () -> CInt -> Ptr (Ptr ()) -> IO (CInt)
 
 type HandlerFuncPtr = FunPtr HandlerFuncC
@@ -160,7 +170,7 @@ mkHandler :: HandlerFunc -> IO (FunPtr HandlerFuncC)
 mkHandler f = mkHandler' f'  
   where 
     f' ptr interp cint ptrptr = 
-      f ptr (Interpreter interp) cint ptrptr 
+      f ptr (Interpreter interp) cint (castPtr ptrptr) 
 
 foreign import ccall safe "wrapper"
    mkHandler' :: HandlerFuncC -> IO (FunPtr HandlerFuncC)
@@ -230,3 +240,19 @@ newStringObject str = newStringObject' str (length str)
 {# fun Tcl_NewStringObj as newStringObject'
    { withCString* `String' , 
      fromIntegral `Int'    } -> `Object' mkObject* #}
+
+
+
+
+------------------------------------------------------------------------------
+-- Get operations on Objects. 
+
+{# fun Tcl_GetIntFromObj as getIntFromObject 
+   { fromInterpreter `Interpreter' ,
+     fromObject      `Object' , 
+     alloca-         `CInt' peek*}  -> `Result' resultToEnum #} 
+     
+
+-- int Tcl_GetIntFromObj(interp, objPtr, intPtr)
+-- char *Tcl_GetStringFromObj(objPtr, lengthPtr)
+-- char *Tcl_GetString(objPtr)
